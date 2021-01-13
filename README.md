@@ -7,7 +7,7 @@ UnifyTags is an item unifier similar to [InstantUnify](https://www.curseforge.co
 ## Features
 
 - Unify item entities (and therefore drops from blocks except from quarries)
-- Unify items when the go into your inventory
+- Unify items when they go into your inventory
 - Unify certain recipes
 - Hide unified materials through JEI
 
