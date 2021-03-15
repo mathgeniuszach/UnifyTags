@@ -2,10 +2,13 @@ onEvent("jei.hide.items", event => {
     if (global["HIDE_UNIFIED_ITEMS"]) {
         try {
             for (let tag of global["unifytags"]) {
-                let stacks = Ingredient.of("#"+tag).getStacks().toArray()
-                let tItem = global["tagitems"][tag]
-                for (let s of stacks) {
-                    if (s.getId() != tItem) event.hide(s.getId())
+                let ingr = Ingredient.of("#"+tag)
+                if (ingr) {
+                    let stacks = ingr.getStacks().toArray()
+                    let tItem = global["tagitems"][tag]
+                    for (let s of stacks) {
+                        if (s.getId() != tItem) event.hide(s.getId())
+                    }
                 }
             }
         } catch (err) {

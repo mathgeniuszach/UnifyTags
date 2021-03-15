@@ -70,16 +70,19 @@ onEvent("recipes", event => {
     var tagitems = new Map()
     tagLoop:
     for (let tag of tags) {
-        let stacks = Ingredient.of("#"+tag).getStacks().toArray()
-        for (let mod of global["unifypriorities"]) {
-            for (let stack of stacks) {
-                if (stack.getMod() == mod) {
-                    tagitems[tag] = stack.getId()
-                    continue tagLoop
+        let ingr = Ingredient.of("#"+tag)
+        if (ingr) {
+            let stacks = ingr.getStacks().toArray()
+            for (let mod of global["unifypriorities"]) {
+                for (let stack of stacks) {
+                    if (stack.getMod() == mod) {
+                        tagitems[tag] = stack.getId()
+                        continue tagLoop
+                    }
                 }
             }
+            if (stacks.length > 0) tagitems[tag] = stacks[0].getId()
         }
-        if (stacks.length > 0) tagitems[tag] = stacks[0].getId()
     }
     // Update tags
     global["unifytags"] = tags
@@ -88,11 +91,14 @@ onEvent("recipes", event => {
     // Unify the rest
     if (global["RECIPE_UNIFY"]) {
         for (let tag of global["unifytags"]) {
-            let stacks = Ingredient.of("#"+tag).getStacks().toArray()
-            let oItem = global["tagitems"][tag]
-            for (let tItem of stacks) {
-                event.replaceInput({}, tItem.getId(), "#"+tag)
-                event.replaceOutput({}, tItem.getId(), oItem)
+            let ingr = Ingredient.of("#"+tag)
+            if (ingr) {
+                let stacks = ingr.getStacks().toArray()
+                let oItem = global["tagitems"][tag]
+                for (let tItem of stacks) {
+                    event.replaceInput({}, tItem.getId(), "#"+tag)
+                    event.replaceOutput({}, tItem.getId(), oItem)
+                }
             }
         }
     }
@@ -107,7 +113,8 @@ onEvent("player.inventory.changed", event => {
         
         // Check for every tag in the list
         for (let tag of global["unifytags"]) {
-            if (Ingredient.of("#"+tag).test(heldItem)) {
+            let ingr = Ingredient.of("#"+tag)
+            if (ingr.test(heldItem)) {
                 // If item is in tag, determine if it needs to be changed
                 let tItem = global["tagitems"][tag]
                 if (tItem != heldItem.getId()) {
@@ -133,7 +140,8 @@ onEvent("entity.spawned", event => {
             var gItem = entity.getItem()
             // Check for every tag in the list
             for (let tag of global["unifytags"]) {
-                if (Ingredient.of("#"+tag).test(gItem)) {
+                let ingr = Ingredient.of("#"+tag)
+                if (ingr && ingr.test(gItem)) {
                     // If item is in tag, determine if it needs to be changed
                     let tItem = global["tagitems"][tag]
                     if (tItem != gItem.getId()) {
