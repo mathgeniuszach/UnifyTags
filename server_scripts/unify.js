@@ -64,13 +64,21 @@ for (let line of tagGen) {
     }
 }
 
+function tryTag(tag) {
+    try {
+        return Ingredient.of("#"+tag)
+    } catch (err) {
+        return null
+    }
+}
+
 // Replace input and output of recipes (and iterate over tags!)
 onEvent("recipes", event => {
     // Iterate over tags (they should be loaded)
     var tagitems = new Map()
     tagLoop:
     for (let tag of tags) {
-        let ingr = Ingredient.of("#"+tag)
+        let ingr = tryTag(tag)
         if (ingr) {
             let stacks = ingr.getStacks().toArray()
             for (let mod of global["unifypriorities"]) {
@@ -91,7 +99,7 @@ onEvent("recipes", event => {
     // Unify the rest
     if (global["RECIPE_UNIFY"]) {
         for (let tag of global["unifytags"]) {
-            let ingr = Ingredient.of("#"+tag)
+            let ingr = tryTag(tag)
             if (ingr) {
                 let stacks = ingr.getStacks().toArray()
                 let oItem = global["tagitems"][tag]
@@ -113,8 +121,8 @@ onEvent("player.inventory.changed", event => {
         
         // Check for every tag in the list
         for (let tag of global["unifytags"]) {
-            let ingr = Ingredient.of("#"+tag)
-            if (ingr.test(heldItem)) {
+            let ingr = tryTag(tag)
+            if (ingr && ingr.test(heldItem)) {
                 // If item is in tag, determine if it needs to be changed
                 let tItem = global["tagitems"][tag]
                 if (tItem != heldItem.getId()) {
@@ -140,7 +148,7 @@ onEvent("entity.spawned", event => {
             var gItem = entity.getItem()
             // Check for every tag in the list
             for (let tag of global["unifytags"]) {
-                let ingr = Ingredient.of("#"+tag)
+                let ingr = tryTag(tag)
                 if (ingr && ingr.test(gItem)) {
                     // If item is in tag, determine if it needs to be changed
                     let tItem = global["tagitems"][tag]
