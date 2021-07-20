@@ -6,11 +6,12 @@ global["ITEM_UNIFY"] = true
 global["RECIPE_UNIFY"] = true
 // Whether or not to hide not-first materials in jei (requires secondary script)
 global["HIDE_UNIFIED_ITEMS"] = true
-// Whether or not to disable non-priority ore-gen
-global["UNIFY_ORE_GEN"] = true
+// Whether or not to disable non-priority ore-gen (THIS DOES NOT WORK AS OF CURRENTLY)
+// global["UNIFY_ORE_GEN"] = true
 
 // Mod priorities
 global["unifypriorities"] = [
+    "alltheores",
     "mekanism",
     "thermal",
     "silents_mechanisms",
@@ -21,9 +22,10 @@ global["unifypriorities"] = [
 // Add oredictionary tags here to unify (or use javascript to generate it!)
 var tags = [
     "forge:plates/iron",
-    "forge:gears/iron"
+    "forge:gears/iron",
+    "forge:silicon"
 ]
-// Block tags for ore gen unification (an equal item tag is required for this to work, which is the case with ores normally)
+// Block tags for ore gen unification (DOES NOT WORK CURRENTLY)
 /*var btags = [
     "forge:ores/copper",
     "forge:ores/tin",
@@ -55,7 +57,8 @@ var tagGen = [
     "iridium=storage_blocks,ingots,nuggets,dusts,ores",
     "zinc=storage_blocks,ingots,nuggets,dusts,ores",
     "osmium=ingots,ores",
-    "sulfur=dusts,ores"
+    "sulfur=dusts,ores",
+    "silicon=gems"
 ]
 for (let line of tagGen) {
     let data = line.split("=")
@@ -146,16 +149,18 @@ onEvent("entity.spawned", event => {
         var entity = event.getEntity()
         if (entity.getType() == "minecraft:item") {
             var gItem = entity.getItem()
-            // Check for every tag in the list
-            for (let tag of global["unifytags"]) {
-                let ingr = tryTag(tag)
-                if (ingr && ingr.test(gItem)) {
-                    // If item is in tag, determine if it needs to be changed
-                    let tItem = global["tagitems"][tag]
-                    if (tItem != gItem.getId()) {
-                        entity.setItem(Item.of(tItem, gItem.getCount()))
+            if (gItem) {
+                // Check for every tag in the list
+                for (let tag of global["unifytags"]) {
+                    let ingr = tryTag(tag)
+                    if (ingr && ingr.test(gItem)) {
+                        // If item is in tag, determine if it needs to be changed
+                        let tItem = global["tagitems"][tag]
+                        if (tItem != gItem.getId()) {
+                            entity.setItem(Item.of(tItem, gItem.getCount()))
+                        }
+                        break
                     }
-                    break
                 }
             }
         }
