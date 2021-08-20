@@ -112,8 +112,11 @@ onEvent("recipes", event => {
                 let stacks = ingr.getStacks().toArray()
                 let oItem = global["tagitems"][tag]
                 for (let tItem of stacks) {
-                    event.replaceInput({}, tItem.getId(), "#"+tag)
-                    event.replaceOutput({}, tItem.getId(), oItem)
+                    let itemId = tItem.getId()
+                    if (global["unifyexclude"].has(itemId)) continue
+                    
+                    event.replaceInput({}, itemId, "#"+tag)
+                    event.replaceOutput({}, itemId, oItem)
                 }
             }
         }
