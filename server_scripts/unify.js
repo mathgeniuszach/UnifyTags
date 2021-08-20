@@ -11,6 +11,7 @@ global["HIDE_UNIFIED_ITEMS"] = true
 
 // Mod priorities
 global["unifypriorities"] = [
+    "minecraft",
     "alltheores",
     "mekanism",
     "thermal",
@@ -18,8 +19,12 @@ global["unifypriorities"] = [
     "silentgems",
     "chemlib"
 ]
+// Items to exclude (will not be unified)
+global["unifyexclude"] = new Set([
+    // "minecraft:stone"
+])
 
-// Add oredictionary tags here to unify (or use javascript to generate it!)
+// Add oredictionary tags here to unify (or use javascript to generate it!). These are also higher priority than tagGen
 var tags = [
     "forge:plates/iron",
     "forge:gears/iron",
@@ -38,9 +43,9 @@ var tags = [
     "forge:ores/iridium",
     "forge:ores/zinc",
     "forge:ores/osmium",
-    "forge:ores/sulfur",
+    "forge:ores/sulfur"
 ]*/
-// Easier way to add multiple tags (feel free to add empty extra tags, this will ignore them)
+// Easier way to add multiple tags (feel free to add non-existant extra tags, this will ignore them)
 var tagGen = [
     "gold=gears,plates",
     "diamond=gears,plates",
@@ -121,6 +126,9 @@ onEvent("player.inventory.changed", event => {
     if (global["INVENTORY_UNIFY"] && event.getEntity().getOpenInventory().getClass().getName() == "net.minecraft.inventory.container.PlayerContainer") {
         // Get held item
         var heldItem = event.getItem()
+        var itemId = heldItem.getId()
+        // Check if item is excluded
+        if (global["unifyexclude"].has(itemId)) return
         
         // Check for every tag in the list
         for (let tag of global["unifytags"]) {
@@ -128,7 +136,7 @@ onEvent("player.inventory.changed", event => {
             if (ingr && ingr.test(heldItem)) {
                 // If item is in tag, determine if it needs to be changed
                 let tItem = global["tagitems"][tag]
-                if (tItem != heldItem.getId()) {
+                if (tItem != itemId) {
                     // Fix slot number
                     let slot = event.getSlot()
                     if (slot <= 5) slot += 36
@@ -149,6 +157,10 @@ onEvent("entity.spawned", event => {
         var entity = event.getEntity()
         if (entity.getType() == "minecraft:item") {
             var gItem = entity.getItem()
+            var itemId = gItem.getId()
+            // Check if item is excluded
+            if (global["unifyexclude"].has(itemId)) return
+
             if (gItem) {
                 // Check for every tag in the list
                 for (let tag of global["unifytags"]) {
@@ -156,7 +168,7 @@ onEvent("entity.spawned", event => {
                     if (ingr && ingr.test(gItem)) {
                         // If item is in tag, determine if it needs to be changed
                         let tItem = global["tagitems"][tag]
-                        if (tItem != gItem.getId()) {
+                        if (tItem != itemId) {
                             entity.setItem(Item.of(tItem, gItem.getCount()))
                         }
                         break

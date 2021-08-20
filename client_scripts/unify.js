@@ -15,7 +15,7 @@ onEvent("jei.hide.items", event => {
                     let stacks = ingr.getStacks().toArray()
                     let tItem = global["tagitems"][tag]
                     for (let s of stacks) {
-                        if (s.getId() != tItem) event.hide(s.getId())
+                        if (s.getId() != tItem && !global["unifyexclude"].has(s.getId())) event.hide(s.getId())
                     }
                 }
             }
