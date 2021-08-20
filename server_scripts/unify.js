@@ -92,7 +92,7 @@ onEvent("recipes", event => {
             for (let mod of global["unifypriorities"]) {
                 for (let stack of stacks) {
                     if (stack.getMod() == mod) {
-                        tagitems[tag] = stack.getId()
+                        if (!global["unifyexclude"].has(stack.getId())) tagitems[tag] = stack.getId()
                         continue tagLoop
                     }
                 }
