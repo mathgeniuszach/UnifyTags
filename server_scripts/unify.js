@@ -160,11 +160,11 @@ onEvent("entity.spawned", event => {
         var entity = event.getEntity()
         if (entity.getType() == "minecraft:item") {
             var gItem = entity.getItem()
-            var itemId = gItem.getId()
-            // Check if item is excluded
-            if (global["unifyexclude"].has(itemId)) return
-
             if (gItem) {
+                var itemId = gItem.getId()
+                // Check if item is excluded
+                if (global["unifyexclude"].has(itemId)) return
+
                 // Check for every tag in the list
                 for (let tag of global["unifytags"]) {
                     let ingr = tryTag(tag)
