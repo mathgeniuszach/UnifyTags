@@ -33,6 +33,13 @@ let tags = [
     "forge:silicon"
 ]
 
+// A list of lists of items to unify. Each list will be turned into a tag and added to the list of tags to unify.
+// Accepts Regex. You can preface an id with # to make it add all the items from that tag.
+let customtags = [
+    // ["mod_a:rope", "mod_b:rope"], // Unifies rope from mod_a and mod_b
+    // ["mod_c:dinosaur", "mod_b:dinosaur"] // Unifies the dinosaur item from mod_c and mod_b
+]
+
 // ---------- PLATFORM SPECIFIC ----------
 
 if (Platform.isForge()) {
@@ -101,6 +108,7 @@ if (Platform.isForge()) {
 
 
 
+
 function tryTag(tag) {
     try {
         return Ingredient.of("#"+tag)
@@ -108,6 +116,22 @@ function tryTag(tag) {
         return null
     }
 }
+
+// Create custom tags
+onEvent('tags.items', event => {
+    let root = "unifytags:tag"
+    let i = 0
+    for (let ctag of customtags) {
+        let tag = event.get(root + i)
+        for (let item of ctag) {
+            try {
+                tag.add(item)
+            } catch (err) {}
+        }
+        tags.push(root + i)
+        ++i
+    }
+})
 
 // Replace input and output of recipes (and iterate over tags!)
 onEvent("recipes", event => {
