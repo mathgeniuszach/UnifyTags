@@ -6,8 +6,6 @@ global["ITEM_UNIFY"] = true
 global["RECIPE_UNIFY"] = true
 // Whether or not to hide not-first materials in jei (requires secondary script)
 global["HIDE_UNIFIED_ITEMS"] = true
-// Whether or not to disable non-priority ore-gen (THIS DOES NOT WORK AS OF CURRENTLY)
-// global["UNIFY_ORE_GEN"] = true
 
 // Mod priorities
 global["unifypriorities"] = [
@@ -30,21 +28,9 @@ var tags = [
     "forge:gears/iron",
     "forge:silicon"
 ]
-// Block tags for ore gen unification (DOES NOT WORK CURRENTLY)
-/*var btags = [
-    "forge:ores/copper",
-    "forge:ores/tin",
-    "forge:ores/aluminum",
-    "forge:ores/lead",
-    "forge:ores/silver",
-    "forge:ores/nickel",
-    "forge:ores/platinum",
-    "forge:ores/uranium",
-    "forge:ores/iridium",
-    "forge:ores/zinc",
-    "forge:ores/osmium",
-    "forge:ores/sulfur"
-]*/
+
+// ---------- FORGE ONLY ----------
+
 // Easier way to add multiple tags (feel free to add non-existant extra tags, this will ignore them)
 var tagGen = [
     "gold=gears,plates",
@@ -71,6 +57,8 @@ for (let line of tagGen) {
         tags.push("forge:" + type + "/" + data[0])
     }
 }
+
+// ---------- END FORGE ONLY ----------
 
 function tryTag(tag) {
     try {
