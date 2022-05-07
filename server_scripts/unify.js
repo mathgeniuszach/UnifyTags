@@ -1,3 +1,5 @@
+// ---------- CONFIG ----------
+
 // Whether or not to unify items in inventory
 global["INVENTORY_UNIFY"] = true
 // Whether or not to unify items in world
@@ -10,6 +12,7 @@ global["HIDE_UNIFIED_ITEMS"] = true
 // Mod priorities
 global["unifypriorities"] = [
     "minecraft",
+    "techreborn",
     "alltheores",
     "mekanism",
     "thermal",
@@ -22,43 +25,81 @@ global["unifyexclude"] = new Set([
     // "minecraft:stone"
 ])
 
-// Add oredictionary tags here to unify (or use javascript to generate it!). These are also higher priority than tagGen
-var tags = [
+// Add oredictionary tags here to unify (or use javascript to generate it!). These are also higher priority than tagGen.
+// Non-existant tags will be ignored.
+let tags = [
     "forge:plates/iron",
     "forge:gears/iron",
     "forge:silicon"
 ]
 
-// ---------- FORGE ONLY ----------
+// ---------- PLATFORM SPECIFIC ----------
 
-// Easier way to add multiple tags (feel free to add non-existant extra tags, this will ignore them)
-var tagGen = [
-    "gold=gears,plates",
-    "diamond=gears,plates",
-    "copper=storage_blocks,ingots,nuggets,dusts,ores,gears,plates",
-    "tin=storage_blocks,ingots,nuggets,dusts,ores,gears,plates",
-    "aluminum=storage_blocks,ingots,nuggets,dusts,ores,gears,plates",
-    "lead=storage_blocks,ingots,nuggets,dusts,ores,gears,plates",
-    "silver=storage_blocks,ingots,nuggets,dusts,ores,gears,plates",
-    "nickel=storage_blocks,ingots,nuggets,dusts,ores,gears,plates",
-    "bronze=storage_blocks,ingots,nuggets,dusts,ores,gears,plates",
-    "steel=storage_blocks,ingots,nuggets,dusts",
-    "platinum=storage_blocks,ingots,nuggets,dusts,ores",
-    "uranium=storage_blocks,ingots,nuggets,dusts,ores",
-    "iridium=storage_blocks,ingots,nuggets,dusts,ores",
-    "zinc=storage_blocks,ingots,nuggets,dusts,ores",
-    "osmium=ingots,ores",
-    "sulfur=dusts,ores",
-    "silicon=gems"
-]
-for (let line of tagGen) {
-    let data = line.split("=")
-    for (let type of data[1].split(",")) {
-        tags.push("forge:" + type + "/" + data[0])
+if (Platform.isForge()) {
+    // Easier way to add multiple tags on forge
+    let tagGen = [
+        "gold,diamond=gears,plates",
+        "copper,tin,aluminum,lead,silver,nickel,bronze,steal,platinum,uranium,iridium,zinc"
+            + "=storage_blocks,ingots,nuggets,dusts,ores,gears,plates",
+        "osmium=ingots,ores",
+        "sulfur=dusts,ores",
+        "silicon=gems"
+    ]
+    for (let line of tagGen) {
+        let data = line.split("=")
+        for (let type of data[1].split(",")) {
+            for (let material of data[0].split(",")) {
+                tags.push("forge:" + type + (data[0].length > 0 ? "/" + data[0] : ""))
+            }
+        }
+    }
+} else if (Platform.isFabric()) {
+    // Easier way to add multiple tags on fabric
+    let tagGen = [
+        "advanced_alloy=ingots,plates",
+        "almandine,andesite,andradite,ashes,calcite,charcoal,clay,dark_ashes,diorite,"
+        + "ender_eye,ender_pearl,endstone,flint,granite,grossular,magnesium,manganese,"
+        + "marble,netherrack,olivine,phosphorous,pyrope,saltpeter,saw,spessartine,sulfur,"
+        + "uvarovite"
+            + "=dusts,small_dusts",
+        "aluminum,brass,bronze,chrome,copper,electrum,invar,iridium,lead,nickel,platinum,"
+        + "silver,steel,tin,titanium,tungsten,zinc"
+            + "=blocks,dusts,ingots,nuggets,ores,plates,small_dusts",
+        "basalt=,dusts,small_dusts",
+        "bauxite,cinnabar,galena,pyrite,sodalite,sphalerite=dusts,ores,small_dusts",
+        "carbon,magnalium,silicon=plates",
+        "coal,gold,iron,redstone=dusts,ores,plates,small_dusts",
+        "diamond,emerald=dusts,nuggets,ores,plates,small_dusts",
+        "glowstone=small_dusts",
+        "iridium_alloy=ingots,plates",
+        "lapis=ores,plates",
+        "lazurite,obsidian,quartz=dusts,plates,small_dusts",
+        "mixed_metal=ingots",
+        "peridot,red_garnet,ruby,sapphire,yellow_garnet=blocks,dusts,gems,ores,plates,small_dusts",
+        "refined_iron,tungstensteel=blocks,ingots,nuggets,plates",
+        "rubies=",
+        "sheldonite=ores"
+    ]
+    for (let line of tagGen) {
+        let data = line.split("=")
+        for (let type of data[1].split(",")) {
+            for (let material of data[0].split(",")) {
+                tags.push("c:" + type + (material.length > 0 ? "_" + material : ""))
+            }
+        }
     }
 }
 
-// ---------- END FORGE ONLY ----------
+// ---------- END PLATFORM SPECIFIC ----------
+
+// ---------- END CONFIG ----------
+
+
+
+
+
+
+
 
 function tryTag(tag) {
     try {
@@ -70,26 +111,34 @@ function tryTag(tag) {
 
 // Replace input and output of recipes (and iterate over tags!)
 onEvent("recipes", event => {
-    // Iterate over tags (they should be loaded)
-    var tagitems = new Map()
+    // Iterate over tags to generate tagitems and remove bad tags (they should be loaded)
+    let truetags = []
+    let tagitems = new Map()
     tagLoop:
     for (let tag of tags) {
         let ingr = tryTag(tag)
         if (ingr) {
             let stacks = ingr.getStacks().toArray()
-            for (let mod of global["unifypriorities"]) {
-                for (let stack of stacks) {
-                    if (stack.getMod() == mod) {
-                        if (!global["unifyexclude"].has(stack.getId())) tagitems[tag] = stack.getId()
-                        continue tagLoop
+            // Only load tags with 2 or more items
+            if (stacks.length > 1) {
+                truetags.push(tag)
+
+                for (let mod of global["unifypriorities"]) {
+                    for (let stack of stacks) {
+                        if (stack.getMod() == mod) {
+                            if (!global["unifyexclude"].has(stack.getId())) tagitems[tag] = stack.getId()
+                            continue tagLoop
+                        }
                     }
                 }
+            
+                tagitems[tag] = stacks[0].getId()
             }
-            if (stacks.length > 0) tagitems[tag] = stacks[0].getId()
         }
     }
-    // Update tags
-    global["unifytags"] = tags
+
+    // Globalize tags
+    global["unifytags"] = truetags
     global["tagitems"] = tagitems
     
     // Unify the rest
@@ -113,43 +162,45 @@ onEvent("recipes", event => {
 
 // Handle inventory change (to check for unificaiton)
 // Unfortunately it gets called twice due to setting the inventory.
-onEvent("player.inventory.changed", event => {
-    if (global["INVENTORY_UNIFY"] && event.getEntity().getOpenInventory().getClass().getName() == "net.minecraft.inventory.container.PlayerContainer") {
-        // Get held item
-        var heldItem = event.getItem()
-        var itemId = heldItem.getId()
-        // Check if item is excluded
-        if (global["unifyexclude"].has(itemId)) return
-        
-        // Check for every tag in the list
-        for (let tag of global["unifytags"]) {
-            let ingr = tryTag(tag)
-            if (ingr && ingr.test(heldItem)) {
-                // If item is in tag, determine if it needs to be changed
-                let tItem = global["tagitems"][tag]
-                if (tItem != itemId) {
-                    // Fix slot number
-                    let slot = event.getSlot()
-                    if (slot <= 5) slot += 36
-                    else if (slot == 45) slot = 40
-                    else if (slot >= 36) slot -= 36
-                    // Update item
-                    event.getEntity().inventory.set(slot, Item.of(tItem, heldItem.getCount()))
+if (global["INVENTORY_UNIFY"]) {
+    onEvent("player.inventory.changed", event => {
+        if (event.getEntity().getOpenInventory().getClass().getName() == "net.minecraft.inventory.container.PlayerContainer") {
+            // Get held item
+            let heldItem = event.getItem()
+            let itemId = heldItem.getId()
+            // Check if item is excluded
+            if (global["unifyexclude"].has(itemId)) return
+            
+            // Check for every tag in the list
+            for (let tag of global["unifytags"]) {
+                let ingr = tryTag(tag)
+                if (ingr && ingr.test(heldItem)) {
+                    // If item is in tag, determine if it needs to be changed
+                    let tItem = global["tagitems"][tag]
+                    if (tItem != itemId) {
+                        // Fix slot number
+                        let slot = event.getSlot()
+                        if (slot <= 5) slot += 36
+                        else if (slot == 45) slot = 40
+                        else if (slot >= 36) slot -= 36
+                        // Update item
+                        event.getEntity().inventory.set(slot, Item.of(tItem, heldItem.getCount()))
+                    }
+                    break
                 }
-                break
             }
         }
-    }
-})
+    })
+}
 
 // Items on ground
-onEvent("entity.spawned", event => {
-    if (global["ITEM_UNIFY"]) {
-        var entity = event.getEntity()
+if (global["ITEM_UNIFY"]) {
+    onEvent("entity.spawned", event => {
+        let entity = event.getEntity()
         if (entity.getType() == "minecraft:item") {
-            var gItem = entity.getItem()
+            let gItem = entity.getItem()
             if (gItem) {
-                var itemId = gItem.getId()
+                let itemId = gItem.getId()
                 // Check if item is excluded
                 if (global["unifyexclude"].has(itemId)) return
 
@@ -167,5 +218,5 @@ onEvent("entity.spawned", event => {
                 }
             }
         }
-    }
-})
+    })
+}

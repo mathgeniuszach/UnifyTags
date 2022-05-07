@@ -6,8 +6,8 @@ function tryTag(tag) {
     }
 }
 
-onEvent("jei.hide.items", event => {
-    if (global["HIDE_UNIFIED_ITEMS"]) {
+if (global["HIDE_UNIFIED_ITEMS"]) {
+    onEvent("jei.hide.items", event => {
         try {
             for (let tag of global["unifytags"]) {
                 let ingr = tryTag(tag)
@@ -22,5 +22,5 @@ onEvent("jei.hide.items", event => {
         } catch (err) {
             console.error("Failure to hide unified items in JEI. Press F3+T to reload client and retry")
         }
-    }
-})
+    })
+}
