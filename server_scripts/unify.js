@@ -54,9 +54,12 @@ if (Platform.isForge()) {
     ]
     for (let line of tagGen) {
         let data = line.split("=")
-        for (let type of data[1].split(",")) {
-            for (let material of data[0].split(",")) {
-                tags.push("forge:" + type + (data[0].length > 0 ? "/" + data[0] : ""))
+        let ms = (data[0]).split(",")
+        let ts = (data[1]).split(",")
+
+        for (let type of ts) {
+            for (let material of ms) {
+                tags.push("forge:" + type + (material.length > 0 ? "/" + material : ""))
             }
         }
     }
@@ -89,9 +92,12 @@ if (Platform.isForge()) {
     ]
     for (let line of tagGen) {
         let data = line.split("=")
-        for (let type of data[1].split(",")) {
-            for (let material of data[0].split(",")) {
-                tags.push("c:" + type + (material.length > 0 ? "_" + material : ""))
+        let ms = (data[0]).split(",")
+        let ts = (data[1]).split(",")
+
+        for (let material of ms) {
+            for (let type of ts) {
+                tags.push("c:" + material + (type.length > 0 ? "_" + type : ""))
             }
         }
     }
@@ -188,7 +194,8 @@ onEvent("recipes", event => {
 // Unfortunately it gets called twice due to setting the inventory.
 if (global["INVENTORY_UNIFY"]) {
     onEvent("player.inventory.changed", event => {
-        if (event.getEntity().getOpenInventory().getClass().getName() == "net.minecraft.inventory.container.PlayerContainer") {
+        let ename = event.getEntity().getOpenInventory().getClass().getName()
+        if (ename == "net.minecraft.inventory.container.PlayerContainer" || ename == "net.minecraft.class_1723") {
             // Get held item
             let heldItem = event.getItem()
             let itemId = heldItem.getId()
