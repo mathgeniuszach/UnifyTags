@@ -13,6 +13,7 @@ global["HIDE_UNIFIED_ITEMS"] = true
 global["unifypriorities"] = [
     "minecraft",
     "techreborn",
+    "emendatusenigmatica",
     "alltheores",
     "mekanism",
     "thermal",
@@ -46,8 +47,9 @@ if (Platform.isForge()) {
     // Easier way to add multiple tags on forge
     let tagGen = [
         "gold,diamond=gears,plates",
-        "copper,tin,aluminum,lead,silver,nickel,bronze,steal,platinum,uranium,iridium,zinc"
-            + "=storage_blocks,ingots,nuggets,dusts,ores,gears,plates",
+        "copper,tin,aluminum,lead,silver,nickel,bronze,steel,platinum,uranium,iridium,zinc"
+            + "=storage_blocks,ingots,nuggets,dusts,ores,gears,plates,raw_materials",
+        "raw_copper,raw_tin,raw_aluminum,raw_lead,raw_silver,raw_nickel,raw_bronze,raw_steel,raw_platinum,raw_uranium,raw_iridium,raw_zinc=storage_blocks",
         "osmium=ingots,ores",
         "sulfur=dusts,ores",
         "silicon=gems"
@@ -88,7 +90,9 @@ if (Platform.isForge()) {
         "peridot,red_garnet,ruby,sapphire,yellow_garnet=blocks,dusts,gems,ores,plates,small_dusts",
         "refined_iron,tungstensteel=blocks,ingots,nuggets,plates",
         "rubies=",
-        "sheldonite=ores"
+        "sheldonite=ores",
+        "raw_copper,raw_gold,raw_iridium,raw_iron,raw_lead,raw_silver,raw_tin,raw_tungsten"
+            + "=blocks,ores"
     ]
     for (let line of tagGen) {
         let data = line.split("=")
