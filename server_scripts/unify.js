@@ -6,20 +6,17 @@ global["INVENTORY_UNIFY"] = true
 global["ITEM_UNIFY"] = true
 // Whether or not to unify recipes
 global["RECIPE_UNIFY"] = true
-// Whether or not to hide not-first materials in jei (requires secondary script)
-global["HIDE_UNIFIED_ITEMS"] = true
+// For configuring JEI hides, go to the client side script
 
 // Mod priorities
 global["unifypriorities"] = [
-    "minecraft",
-    "techreborn",
-    "emendatusenigmatica",
-    "alltheores",
-    "mekanism",
     "thermal",
-    "silents_mechanisms",
-    "silentgems",
-    "chemlib"
+    "mekanism",
+    "create",
+    "assemblylinemachines",
+    "futurepack",
+    "tconstruct",
+    "tinkers_reforged"
 ]
 // Items to exclude (will not be unified)
 global["unifyexclude"] = new Set([
@@ -52,6 +49,7 @@ if (Platform.isForge()) {
         "raw_copper,raw_tin,raw_aluminum,raw_lead,raw_silver,raw_nickel,raw_bronze,raw_steel,raw_platinum,raw_uranium,raw_iridium,raw_zinc=storage_blocks",
         "osmium=ingots,ores",
         "sulfur=dusts,ores",
+        "netherite=dusts",
         "silicon=gems"
     ]
     for (let line of tagGen) {
@@ -160,7 +158,7 @@ onEvent("recipes", event => {
                 for (let mod of global["unifypriorities"]) {
                     for (let stack of stacks) {
                         if (stack.getMod() == mod) {
-                            if (!global["unifyexclude"].has(stack.getId())) tagitems[tag] = stack.getId()
+                            if (!global["unifyexclude"].has(String(stack.getId()))) tagitems[tag] = stack.getId()
                             continue tagLoop
                         }
                     }
@@ -183,7 +181,7 @@ onEvent("recipes", event => {
                 let stacks = ingr.getStacks().toArray()
                 let oItem = global["tagitems"][tag]
                 for (let tItem of stacks) {
-                    let itemId = tItem.getId()
+                    let itemId = String(tItem.getId())
                     if (global["unifyexclude"].has(itemId)) continue
                     
                     event.replaceInput({}, itemId, "#"+tag)
@@ -194,15 +192,22 @@ onEvent("recipes", event => {
     }
 })
 
+invnames = new Set([
+    "net.minecraft.inventory.container.PlayerContainer",
+    "net.minecraft.class_1723",
+    "net.minecraft.world.inventory.InventoryMenu"
+])
+
 // Handle inventory change (to check for unificaiton)
 // Unfortunately it gets called twice due to setting the inventory.
 if (global["INVENTORY_UNIFY"]) {
     onEvent("player.inventory.changed", event => {
-        let ename = event.getEntity().getOpenInventory().getClass().getName()
-        if (ename == "net.minecraft.inventory.container.PlayerContainer" || ename == "net.minecraft.class_1723") {
+        let ename = String(event.getEntity().getOpenInventory().getClass().getName())
+        if (invnames.has(ename)) {
             // Get held item
             let heldItem = event.getItem()
-            let itemId = heldItem.getId()
+            let itemId = String(heldItem.getId())
+            
             // Check if item is excluded
             if (global["unifyexclude"].has(itemId)) return
             
@@ -235,7 +240,7 @@ if (global["ITEM_UNIFY"]) {
         if (entity.getType() == "minecraft:item") {
             let gItem = entity.getItem()
             if (gItem) {
-                let itemId = gItem.getId()
+                let itemId = String(gItem.getId())
                 // Check if item is excluded
                 if (global["unifyexclude"].has(itemId)) return
 
