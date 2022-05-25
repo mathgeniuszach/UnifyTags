@@ -38,13 +38,13 @@ let customtags = [
     // ["mod_c:dinosaur", "mod_b:dinosaur"] // Unifies the dinosaur item from mod_c and mod_b
 ]
 
-// Join multiple tags together to create brand new ones. If a tag does not exist, it will not be merged into or used.
+// Adds items into the first string in each list. If a tag does not exist, it will either be created or ignored.
 let tagUnions = [
-    // Makes it so that any items in "annoyingmod:iron_plates" will also be merged with "forge:plates/iron" items
-    // It basically adds those items into the first tag, without affecting recipes.
     // Regex is supported, excluding the first string. The first string to merge into must not have a #, but other ones must.
-    // The first string may optionally use one equal sign and commas like how tagSplits does
+    // The first string may optionally use one equal sign and commas like how tagSplits does.
     // ["forge:plates/iron", "#annoyingmod:iron_plates", "#anothermod:iron_plates", "thirdmod:iron_plate"]
+    ["forge:ores_in_ground/deepslate", /thermal:deepslate_.*_ore/g],
+    ["forge:ores_in_ground/stone", /thermal:(?!deepslate).*_ore/g]
 ]
 
 // Split tags apart to create new ones. If a tag does not exist, it will not be merged into or used.
@@ -56,7 +56,6 @@ let tagSplits = [
         "forge:ores_in_ground/stone"
     ]
 ]
-
 
 
 // ---------- PLATFORM SPECIFIC ----------
@@ -142,7 +141,7 @@ if (Platform.isForge()) {
 function esplit(str) {
     let data = str.split("=")
     if (data.length == 1) {
-        for (let v of data.split(",")) yield v
+        for (let v of data[0].split(",")) yield v
     } else if (data.length == 2) {
         for (let l of data[0].split(",")) {
             for (let r of data[1].split(",")) {
@@ -181,26 +180,14 @@ onEvent('tags.items', event => {
         ++i
     }
 
-    // Create tags from unions
+    // Union tags
     for (let union of tagUnions) {
         for (let sum of esplit(union[0])) {
-            let sumtag = tryTag(sum)
-            if (sumtag) {
-                let tag = event.get(root + i)
-
-                // Add items into tag
-                for (let item of union.slice(1)) {
-                    try {
-                        tag.add(item)
-                    } catch (err) { }
-                }
-
-                // Remove original tag from tags to unify
-                tags.delete(sum)
-
-                // Add new tag into tags to unify
-                tags.add(root + i)
-                ++i
+            let tag = event.get(sum)
+            for (let item of union.slice(1)) {
+                try {
+                    tag.add(item)
+                } catch (err) { }
             }
         }
     }
@@ -209,18 +196,23 @@ onEvent('tags.items', event => {
     for (let split of tagSplits) {
         for (let sum of esplit(split[0])) {
             let sumtag = tryTag(sum)
-            if (!sumtag) continue;
+            if (!sumtag) continue
+            
+            let sumset = new Set()
+            for (let v of event.get(sum).getObjectIds()) {
+                sumset.add(String(v))
+            }
 
             // Perform intersection
             for (let intersectors of split.slice(1)) {
                 for (let intersector of esplit(intersectors)) {
                     let intertag = tryTag(intersector)
-                    if (!intertag) continue;
+                    if (!intertag) continue
 
                     // Ok, actually do the test to perform the intersection
                     let tag = event.get(root + i)
-                    for (let item of sumtag.getStacks()) {
-                        if (intertag.test(item)) tag.add(item)
+                    for (let item of event.get(intersector).getObjectIds()) {
+                        if (sumset.has(String(item))) tag.add(String(item))
                     }
 
                     // Add tag to list of tags to unify
