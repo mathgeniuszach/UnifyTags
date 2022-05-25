@@ -25,11 +25,11 @@ global["unifyexclude"] = new Set([
 
 // Add oredictionary tags here to unify (or use javascript to generate it!). These are also higher priority than tagGen.
 // Non-existant tags will be ignored.
-let tags = [
+let tags = new Set([
     "forge:plates/iron",
     "forge:gears/iron",
     "forge:silicon"
-]
+])
 
 // A list of lists of items to unify. Each list will be turned into a tag and added to the list of tags to unify.
 // Accepts Regex. You can preface an id with # to make it add all the items from that tag.
@@ -38,6 +38,27 @@ let customtags = [
     // ["mod_c:dinosaur", "mod_b:dinosaur"] // Unifies the dinosaur item from mod_c and mod_b
 ]
 
+// Join multiple tags together to create brand new ones. If a tag does not exist, it will not be merged into or used.
+let tagUnions = [
+    // Makes it so that any items in "annoyingmod:iron_plates" will also be merged with "forge:plates/iron" items
+    // It basically adds those items into the first tag, without affecting recipes.
+    // Regex is supported, excluding the first string. The first string to merge into must not have a #, but other ones must.
+    // The first string may optionally use one equal sign and commas like how tagSplits does
+    // ["forge:plates/iron", "#annoyingmod:iron_plates", "#anothermod:iron_plates", "thirdmod:iron_plate"]
+]
+
+// Split tags apart to create new ones. If a tag does not exist, it will not be merged into or used.
+let tagSplits = [
+    // Makes it so that deepslate, netherrack, and stone ores are unified separately from normal ores.
+    [
+        "forge:ores/=copper,tin,aluminum,lead,silver,nickel,bronze,steel,platinum,uranium,iridium,zinc,osmium,sulfur",
+        "forge:ores_in_ground/=deepslate,netherrack",
+        "forge:ores_in_ground/stone"
+    ]
+]
+
+
+
 // ---------- PLATFORM SPECIFIC ----------
 
 if (Platform.isForge()) {
@@ -45,13 +66,14 @@ if (Platform.isForge()) {
     let tagGen = [
         "gold,diamond=gears,plates",
         "copper,tin,aluminum,lead,silver,nickel,bronze,steel,platinum,uranium,iridium,zinc"
-            + "=storage_blocks,ingots,nuggets,dusts,ores,gears,plates,raw_materials",
+        + "=storage_blocks,ingots,nuggets,dusts,ores,gears,plates,raw_materials",
         "raw_copper,raw_tin,raw_aluminum,raw_lead,raw_silver,raw_nickel,raw_bronze,raw_steel,raw_platinum,raw_uranium,raw_iridium,raw_zinc=storage_blocks",
         "osmium=ingots,ores",
         "sulfur=dusts,ores",
         "netherite=dusts",
         "silicon=gems"
     ]
+
     for (let line of tagGen) {
         let data = line.split("=")
         let ms = (data[0]).split(",")
@@ -59,7 +81,7 @@ if (Platform.isForge()) {
 
         for (let type of ts) {
             for (let material of ms) {
-                tags.push("forge:" + type + (material.length > 0 ? "/" + material : ""))
+                tags.add("forge:" + type + (material.length > 0 ? "/" + material : ""))
             }
         }
     }
@@ -71,10 +93,10 @@ if (Platform.isForge()) {
         + "ender_eye,ender_pearl,endstone,flint,granite,grossular,magnesium,manganese,"
         + "marble,netherrack,olivine,phosphorous,pyrope,saltpeter,saw,spessartine,sulfur,"
         + "uvarovite"
-            + "=dusts,small_dusts",
+        + "=dusts,small_dusts",
         "aluminum,brass,bronze,chrome,copper,electrum,invar,iridium,lead,nickel,platinum,"
         + "silver,steel,tin,titanium,tungsten,zinc"
-            + "=blocks,dusts,ingots,nuggets,ores,plates,small_dusts",
+        + "=blocks,dusts,ingots,nuggets,ores,plates,small_dusts",
         "basalt=,dusts,small_dusts",
         "bauxite,cinnabar,galena,pyrite,sodalite,sphalerite=dusts,ores,small_dusts",
         "carbon,magnalium,silicon=plates",
@@ -90,7 +112,7 @@ if (Platform.isForge()) {
         "rubies=",
         "sheldonite=ores",
         "raw_copper,raw_gold,raw_iridium,raw_iron,raw_lead,raw_silver,raw_tin,raw_tungsten"
-            + "=blocks,ores"
+        + "=blocks,ores"
     ]
     for (let line of tagGen) {
         let data = line.split("=")
@@ -99,7 +121,7 @@ if (Platform.isForge()) {
 
         for (let material of ms) {
             for (let type of ts) {
-                tags.push("c:" + material + (type.length > 0 ? "_" + type : ""))
+                tags.add("c:" + material + (type.length > 0 ? "_" + type : ""))
             }
         }
     }
@@ -117,27 +139,99 @@ if (Platform.isForge()) {
 
 
 
+function esplit(str) {
+    let data = str.split("=")
+    if (data.length == 1) {
+        for (let v of data.split(",")) yield v
+    } else if (data.length == 2) {
+        for (let l of data[0].split(",")) {
+            for (let r of data[1].split(",")) {
+                yield l+r
+            }
+        }
+    } else {
+        throw Error("too many equal signs")
+    }
+}
+
 function tryTag(tag) {
     try {
-        return Ingredient.of("#"+tag)
+        return Ingredient.of("#" + tag)
     } catch (err) {
         return null
     }
 }
 
-// Create custom tags
 onEvent('tags.items', event => {
+    // Create custom tags
     let root = "unifytags:tag"
     let i = 0
     for (let ctag of customtags) {
         let tag = event.get(root + i)
+
+        // Add items into tag
         for (let item of ctag) {
             try {
                 tag.add(item)
-            } catch (err) {}
+            } catch (err) { }
         }
-        tags.push(root + i)
+
+        // Add new tag into tags to unify
+        tags.add(root + i)
         ++i
+    }
+
+    // Create tags from unions
+    for (let union of tagUnions) {
+        for (let sum of esplit(union[0])) {
+            let sumtag = tryTag(sum)
+            if (sumtag) {
+                let tag = event.get(root + i)
+
+                // Add items into tag
+                for (let item of union.slice(1)) {
+                    try {
+                        tag.add(item)
+                    } catch (err) { }
+                }
+
+                // Remove original tag from tags to unify
+                tags.delete(sum)
+
+                // Add new tag into tags to unify
+                tags.add(root + i)
+                ++i
+            }
+        }
+    }
+
+    // Create tags from intersections
+    for (let split of tagSplits) {
+        for (let sum of esplit(split[0])) {
+            let sumtag = tryTag(sum)
+            if (!sumtag) continue;
+
+            // Perform intersection
+            for (let intersectors of split.slice(1)) {
+                for (let intersector of esplit(intersectors)) {
+                    let intertag = tryTag(intersector)
+                    if (!intertag) continue;
+
+                    // Ok, actually do the test to perform the intersection
+                    let tag = event.get(root + i)
+                    for (let item of sumtag.getStacks()) {
+                        if (intertag.test(item)) tag.add(item)
+                    }
+
+                    // Add tag to list of tags to unify
+                    tags.add(root + i)
+                    ++i
+                }
+            }
+
+            // Remove original tag from tags to unify
+            tags.delete(sum)
+        }
     }
 })
 
@@ -163,7 +257,7 @@ onEvent("recipes", event => {
                         }
                     }
                 }
-            
+
                 tagitems[tag] = stacks[0].getId()
             }
         }
@@ -172,7 +266,7 @@ onEvent("recipes", event => {
     // Globalize tags
     global["unifytags"] = truetags
     global["tagitems"] = tagitems
-    
+
     // Unify the rest
     if (global["RECIPE_UNIFY"]) {
         for (let tag of global["unifytags"]) {
@@ -183,8 +277,8 @@ onEvent("recipes", event => {
                 for (let tItem of stacks) {
                     let itemId = String(tItem.getId())
                     if (global["unifyexclude"].has(itemId)) continue
-                    
-                    event.replaceInput({}, itemId, "#"+tag)
+
+                    event.replaceInput({}, itemId, "#" + tag)
                     event.replaceOutput({}, itemId, oItem)
                 }
             }
@@ -207,10 +301,10 @@ if (global["INVENTORY_UNIFY"]) {
             // Get held item
             let heldItem = event.getItem()
             let itemId = String(heldItem.getId())
-            
+
             // Check if item is excluded
             if (global["unifyexclude"].has(itemId)) return
-            
+
             // Check for every tag in the list
             for (let tag of global["unifytags"]) {
                 let ingr = tryTag(tag)
