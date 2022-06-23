@@ -6,7 +6,16 @@ global["INVENTORY_UNIFY"] = true
 global["ITEM_UNIFY"] = true
 // Whether or not to unify recipes
 global["RECIPE_UNIFY"] = true
-// For configuring JEI hides, go to the client side script
+// Whether or not to attempt to remove duplicate recipes
+// Requires "RECIPE_UNIFY" to be true, and two items with different nbt are considered the same item.
+global["RECIPE_DEDUPE"] = true
+
+// This is not fully implemented yet. It will be in the future though!
+// // Whether or not to cache all items in tags and results the first time they are loaded.
+// // May be required to hide items from JEI or REI correctly on multiplayer.
+// global["CACHE_TAGS"] = false
+
+// For configuring JEI hides, go to the client side script.
 
 // Mod priorities
 global["unifypriorities"] = [
@@ -157,11 +166,31 @@ function tryTag(tag) {
     try {
         return Ingredient.of("#" + tag)
     } catch (err) {
-        return null
+        return undefined
+    }
+}
+function testTag(tag, item) {
+    if ("cache" in global) {
+
+    } else {
+        let itag = tryTag(tag)
+        return itag && itag.test(item)
+    }
+}
+function tagStacks(tag) {
+    if ("cache" in global) {
+        return global["cache"][tag]
+    } else {
+        let itag = tryTag(tag)
+        if (itag) {
+            return itag.getStacks().toArray()
+        } else {
+            return null
+        }
     }
 }
 
-onEvent('tags.items', event => {
+onEvent('tags.items', event => { 
     // Create custom tags
     let root = "unifytags:tag"
     let i = 0
@@ -227,16 +256,15 @@ onEvent('tags.items', event => {
     }
 })
 
-// Replace input and output of recipes (and iterate over tags!)
+// Replace input and output of recipes
 onEvent("recipes", event => {
-    // Iterate over tags to generate tagitems and remove bad tags (they should be loaded)
+    // Iterate over tags to generate tagitems and remove bad tags
     let truetags = []
     let tagitems = new Map()
     tagLoop:
     for (let tag of tags) {
-        let ingr = tryTag(tag)
-        if (ingr) {
-            let stacks = ingr.getStacks().toArray()
+        let stacks = tagStacks(tag)
+        if (stacks) {
             // Only load tags with 2 or more items
             if (stacks.length > 1) {
                 truetags.push(tag)
@@ -258,20 +286,54 @@ onEvent("recipes", event => {
     // Globalize tags
     global["unifytags"] = truetags
     global["tagitems"] = tagitems
-
-    // Unify the rest
+    
     if (global["RECIPE_UNIFY"]) {
         for (let tag of global["unifytags"]) {
-            let ingr = tryTag(tag)
-            if (ingr) {
-                let stacks = ingr.getStacks().toArray()
+            let stacks = tagStacks(tag)
+            if (stacks) {
                 let oItem = global["tagitems"][tag]
                 for (let tItem of stacks) {
                     let itemId = String(tItem.getId())
                     if (global["unifyexclude"].has(itemId)) continue
 
+                    // Replace any time the item appears as an input, with the whole tag
                     event.replaceInput({}, itemId, "#" + tag)
-                    event.replaceOutput({}, itemId, oItem)
+                    // Replace any time the item appears as an output, with the priority item
+                    if (itemId != oItem) event.replaceOutput({}, itemId, oItem)
+                }
+
+                // Attempt at removing duplicate recipes that arise with the same input and output
+                if (global["RECIPE_DEDUPE"]) {
+                    // Iterate over every recipe that has the output specified
+                    let rtypes = {}
+                    event.forEachRecipe({output: oItem}, (r) => {
+                        // Calculate the "hash" of this recipe based on it's ingredients
+                        let hash = []
+                        for (let stack of r.outputItems) {
+                            hash.push(stack.getId(), "+", stack.getCount(), ",")
+                        }
+                        hash.push(";")
+                        for (let ingredient of r.inputItems) {
+                            for (let item of ingredient.getItemIds()) {
+                                hash.push(item, "/")
+                            }
+                            hash.push(",")
+                        }
+    
+                        // Determine if the recipe has been seen before
+                        let rtype = r.getType()
+                        if (rtype in rtypes) {
+                            // Not the first recipe of this type
+                            if (rtypes[rtype].has(hash)) {
+                                // Recipe match found. Delete this recipe
+                                // RecipeJS.removedRecipes.add() is not public, so we're doing this instead.
+                                event.remove({id: r.getId().toString()})
+                            }
+                        } else {
+                            // First recipe of this type, add it's "hash"
+                            rtypes[rtype] = new Set([hash.join("")])
+                        }
+                    })
                 }
             }
         }
@@ -293,14 +355,14 @@ if (global["INVENTORY_UNIFY"]) {
             // Get held item
             let heldItem = event.getItem()
             let itemId = String(heldItem.getId())
+            console.log(itemId)
 
             // Check if item is excluded
             if (global["unifyexclude"].has(itemId)) return
 
             // Check for every tag in the list
             for (let tag of global["unifytags"]) {
-                let ingr = tryTag(tag)
-                if (ingr && ingr.test(heldItem)) {
+                if (testTag(tag, itemId)) {
                     // If item is in tag, determine if it needs to be changed
                     let tItem = global["tagitems"][tag]
                     if (tItem != itemId) {
@@ -332,8 +394,7 @@ if (global["ITEM_UNIFY"]) {
 
                 // Check for every tag in the list
                 for (let tag of global["unifytags"]) {
-                    let ingr = tryTag(tag)
-                    if (ingr && ingr.test(gItem)) {
+                    if (testTag(tag, itemId)) {
                         // If item is in tag, determine if it needs to be changed
                         let tItem = global["tagitems"][tag]
                         if (tItem != itemId) {

@@ -1,20 +1,26 @@
 // Whether or not to hide not-first materials in jei
 global["HIDE_UNIFIED_ITEMS"] = true
 
-function tryTag(tag) {
-    try {
-        return Ingredient.of("#"+tag)
-    } catch (err) {
-        return null
+function tagStacks(tag) {
+    if ("cache" in global) {
+        return global["cache"][tag]
+    } else {
+        try {
+            return Ingredient.of("#" + tag)
+        } catch (err) {
+            return undefined
+        }
     }
+}
+function loadCache() {
+
 }
 
 function hideItems(event) {
     try {
         for (let tag of global["unifytags"]) {
-            let ingr = tryTag(tag)
+            let stacks = tagStacks(tag)
             if (ingr) {
-                let stacks = ingr.getStacks().toArray()
                 let tItem = global["tagitems"][tag]
                 for (let s of stacks) {
                     if (s.getId() != tItem && !global["unifyexclude"].has(s.getId())) event.hide(s.getId())
