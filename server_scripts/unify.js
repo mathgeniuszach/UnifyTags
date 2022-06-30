@@ -228,7 +228,16 @@ onEvent('tags.items', event => {
             if (!sumtag) continue
             
             let sumset = new Set()
-            for (let v of event.get(sum).getObjectIds()) {
+            let sumevget = event.get(sum)
+            
+            let fname = "getObjectIds"
+            try {
+                let c = sumevget[fname]
+            } catch (err) {
+                fname = "getAllItemIds"
+            }
+            
+            for (let v of sumevget[fname]()) {
                 sumset.add(String(v))
             }
 
@@ -240,7 +249,7 @@ onEvent('tags.items', event => {
 
                     // Ok, actually do the test to perform the intersection
                     let tag = event.get(root + i)
-                    for (let item of event.get(intersector).getObjectIds()) {
+                    for (let item of event.get(intersector)[fname]()) {
                         if (sumset.has(String(item))) tag.add(String(item))
                     }
 
