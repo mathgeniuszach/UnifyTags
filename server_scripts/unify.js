@@ -10,27 +10,27 @@ global["RECIPE_UNIFY"] = true
 // Requires "RECIPE_UNIFY" to be true, and two items with different nbt are considered the same item.
 global["RECIPE_DEDUPE"] = true
 
-// This is not fully implemented yet. It will be in the future though!
-// // Whether or not to cache all items in tags and results the first time they are loaded.
-// // May be required to hide items from JEI or REI correctly on multiplayer.
-// global["CACHE_TAGS"] = false
+// To configure caching, go to the startup script.
 
 // For configuring JEI hides, go to the client side script.
 
 // Mod priorities
 global["unifypriorities"] = [
+    "techreborn",
     "thermal",
     "mekanism",
     "create",
     "assemblylinemachines",
     "futurepack",
     "tconstruct",
-    "tinkers_reforged"
+    "tinkers_reforged",
+    "minecraft"
 ]
+
 // Items to exclude (will not be unified)
-global["unifyexclude"] = new Set([
+global["unifyexcludegen"] = [
     // "minecraft:stone"
-])
+]
 
 // Add oredictionary tags here to unify (or use javascript to generate it!). These are also higher priority than tagGen.
 // Non-existant tags will be ignored.
@@ -47,7 +47,7 @@ let customtags = [
     // ["mod_c:dinosaur", "mod_b:dinosaur"] // Unifies the dinosaur item from mod_c and mod_b
 ]
 
-// Adds items into the first string in each list. If a tag does not exist, it will either be created or ignored.
+// Adds items into the first string in each list. If a tag does not exist, it will be created.
 let tagUnions = [
     // Regex is supported, excluding the first string. The first string to merge into must not have a #, but other ones must.
     // The first string may optionally use one equal sign and commas like how tagSplits does.
@@ -58,7 +58,7 @@ let tagUnions = [
 
 // Split tags apart to create new ones. If a tag does not exist, it will not be merged into or used.
 let tagSplits = [
-    // Makes it so that deepslate, netherrack, and stone ores are unified separately from normal ores.
+    // Makes it so that deepslate, netherrack, and stone ores are unified separately.
     [
         "forge:ores/=copper,tin,aluminum,lead,silver,nickel,bronze,steel,platinum,uranium,iridium,zinc,osmium,sulfur",
         "forge:ores_in_ground/=deepslate,netherrack",
@@ -70,7 +70,7 @@ let tagSplits = [
 // ---------- PLATFORM SPECIFIC ----------
 
 if (Platform.isForge()) {
-    // Easier way to add multiple tags on forge
+    // Easier way to add multiple tags on forge (all items here are inserted into the tags set)
     let tagGen = [
         "gold,diamond=gears,plates",
         "copper,tin,aluminum,lead,silver,nickel,bronze,steel,platinum,uranium,iridium,zinc"
@@ -94,7 +94,7 @@ if (Platform.isForge()) {
         }
     }
 } else if (Platform.isFabric()) {
-    // Easier way to add multiple tags on fabric
+    // Easier way to add multiple tags on fabric (all items here are inserted into the tags set)
     let tagGen = [
         "advanced_alloy=ingots,plates",
         "almandine,andesite,andradite,ashes,calcite,charcoal,clay,dark_ashes,diorite,"
@@ -146,7 +146,7 @@ if (Platform.isForge()) {
 
 
 
-
+// Generator which splits equal sign comma stuff
 function esplit(str) {
     let data = str.split("=")
     if (data.length == 1) {
@@ -162,6 +162,7 @@ function esplit(str) {
     }
 }
 
+// Function that attempts to get a tag, if it fails, it returns undefined.
 function tryTag(tag) {
     try {
         return Ingredient.of("#" + tag)
@@ -169,181 +170,197 @@ function tryTag(tag) {
         return undefined
     }
 }
-function testTag(tag, item) {
-    if ("cache" in global) {
 
-    } else {
-        let itag = tryTag(tag)
-        return itag && itag.test(item)
-    }
-}
-function tagStacks(tag) {
-    if ("cache" in global) {
-        return global["cache"][tag]
-    } else {
-        let itag = tryTag(tag)
-        if (itag) {
-            return itag.getStacks().toArray()
-        } else {
-            return null
-        }
-    }
-}
+onEvent('tags.items', event => {
+    if (!("cache" in global)) {
+        // Create custom tags
+        let root = "unifytags:tag"
+        let i = 0
+        for (let ctag of customtags) {
+            let tag = event.get(root + i)
 
-onEvent('tags.items', event => { 
-    // Create custom tags
-    let root = "unifytags:tag"
-    let i = 0
-    for (let ctag of customtags) {
-        let tag = event.get(root + i)
-
-        // Add items into tag
-        for (let item of ctag) {
-            try {
-                tag.add(item)
-            } catch (err) { }
-        }
-
-        // Add new tag into tags to unify
-        tags.add(root + i)
-        ++i
-    }
-
-    // Union tags
-    for (let union of tagUnions) {
-        for (let sum of esplit(union[0])) {
-            let tag = event.get(sum)
-            for (let item of union.slice(1)) {
+            // Add items into tag
+            for (let item of ctag) {
                 try {
                     tag.add(item)
                 } catch (err) { }
             }
+
+            // Add new tag into tags to unify
+            tags.add(root + i)
+            ++i
         }
-    }
 
-    // Create tags from intersections
-    for (let split of tagSplits) {
-        for (let sum of esplit(split[0])) {
-            let sumtag = tryTag(sum)
-            if (!sumtag) continue
-            
-            let sumset = new Set()
-            let sumevget = event.get(sum)
-            
-            let fname = "getObjectIds"
-            try {
-                let c = sumevget[fname]
-            } catch (err) {
-                fname = "getAllItemIds"
-            }
-            
-            for (let v of sumevget[fname]()) {
-                sumset.add(String(v))
-            }
-
-            // Perform intersection
-            for (let intersectors of split.slice(1)) {
-                for (let intersector of esplit(intersectors)) {
-                    let intertag = tryTag(intersector)
-                    if (!intertag) continue
-
-                    // Ok, actually do the test to perform the intersection
-                    let tag = event.get(root + i)
-                    for (let item of event.get(intersector)[fname]()) {
-                        if (sumset.has(String(item))) tag.add(String(item))
-                    }
-
-                    // Add tag to list of tags to unify
-                    tags.add(root + i)
-                    ++i
+        // Union tags
+        for (let union of tagUnions) {
+            for (let sum of esplit(union[0])) {
+                let tag = event.get(sum)
+                for (let item of union.slice(1)) {
+                    try {
+                        tag.add(item)
+                    } catch (err) { }
                 }
             }
+        }
 
-            // Remove original tag from tags to unify
-            tags.delete(sum)
+        // Create tags from intersections
+        for (let split of tagSplits) {
+            for (let sum of esplit(split[0])) {
+                let sumtag = tryTag(sum)
+                if (!sumtag) continue
+                
+                let sumset = new Set()
+                let sumevget = event.get(sum)
+                
+                let fname = "getObjectIds"
+                try {
+                    let c = sumevget[fname]
+                } catch (err) {
+                    fname = "getAllItemIds"
+                }
+                
+                for (let v of sumevget[fname]()) {
+                    sumset.add(String(v))
+                }
+
+                // Perform intersection
+                for (let intersectors of split.slice(1)) {
+                    for (let intersector of esplit(intersectors)) {
+                        let intertag = tryTag(intersector)
+                        if (!intertag) continue
+
+                        // Ok, actually do the test to perform the intersection
+                        let tag = event.get(root + i)
+                        for (let item of event.get(intersector)[fname]()) {
+                            if (sumset.has(String(item))) tag.add(String(item))
+                        }
+
+                        // Add tag to list of tags to unify
+                        tags.add(root + i)
+                        ++i
+                    }
+                }
+
+                // Remove original tag from tags to unify
+                tags.delete(sum)
+            }
         }
     }
 })
 
 // Replace input and output of recipes
 onEvent("recipes", event => {
-    // Iterate over tags to generate tagitems and remove bad tags
-    let truetags = []
-    let tagitems = new Map()
-    tagLoop:
-    for (let tag of tags) {
-        let stacks = tagStacks(tag)
-        if (stacks) {
-            // Only load tags with 2 or more items
-            if (stacks.length > 1) {
-                truetags.push(tag)
+    // If the cache is already generated, this doesn't need to run again
+    if (!("cache" in global)) {
+        // Necessary since Rhino doesn't support the spread operator
+        global["unifyexclude"] = new Set(global["unifyexcludegen"])
 
-                for (let mod of global["unifypriorities"]) {
-                    for (let stack of stacks) {
-                        if (stack.getMod() == mod) {
-                            if (!global["unifyexclude"].has(String(stack.getId()))) tagitems[tag] = stack.getId()
-                            continue tagLoop
+        // Maps item ids to a tag to unify them in. Makes unification fast.
+        let itemsToTags = {}
+        // Maps item tag ids to a list of string
+        let tagItems = {}
+        // Maps tags to their priority item
+        let tagPriorityItems = {}
+
+        for (let tag of tags) {
+            let itag = tryTag(tag)
+            if (itag) {
+                // Only load tags with 2 or more items
+                let stacks = itag.getStacks().toArray()
+                if (stacks.length > 1) {
+                    // Get the priority item for this tag
+                    let priorityItem = String(stacks[0].getId())
+                    priorityLoop:
+                    for (let mod of global["unifypriorities"]) {
+                        for (let stack of stacks) {
+                            if (stack.getMod() == mod) {
+                                let id = String(stack.getId())
+                                if (!global["unifyexclude"].has(id)) {
+                                    priorityItem = id
+                                    break priorityLoop
+                                }
+                            }
                         }
                     }
-                }
 
-                tagitems[tag] = stacks[0].getId()
+                    tagPriorityItems[tag] = priorityItem
+
+                    // Get all items in this tag
+                    let items = []
+                    for (let stack of stacks) {
+                        let id = String(stack.getId())
+                        if (!(id in itemsToTags)) itemsToTags[id] = tag
+                        items.push(id)
+                    }
+
+                    tagItems[tag] = items
+                }
             }
         }
-    }
 
-    // Globalize tags
-    global["unifytags"] = truetags
-    global["tagitems"] = tagitems
+        // Globalize maps
+        global["itemsToTags"] = itemsToTags
+        global["tagItems"] = tagItems
+        global["tagPriorityItems"] = tagPriorityItems
+
+        // Make cache (since it doesn't exist)
+        if (global["CACHE_TAGS"]) {
+            // Save cached stuff json file
+            global["cache"] = {
+                itemsToTags: itemsToTags,
+                tagItems: tagItems,
+                tagPriorityItems: tagPriorityItems,
+                unifyexclude: global["unifyexcludegen"]
+            }
+            JsonIO.write("kubejs/config/unify_cache.json", global["cache"])
+        }
+    }
     
     if (global["RECIPE_UNIFY"]) {
-        for (let tag of global["unifytags"]) {
-            let stacks = tagStacks(tag)
-            if (stacks) {
-                let oItem = global["tagitems"][tag]
-                for (let tItem of stacks) {
-                    let itemId = String(tItem.getId())
-                    if (global["unifyexclude"].has(itemId)) continue
+        for (let [tag, stacks] of Object.entries(global["tagItems"])) {
+            let priorityId = global["tagPriorityItems"][tag]
+            for (let itemId of stacks) {
+                if (global["unifyexclude"].has(itemId)) continue
 
-                    // Replace any time the item appears as an input, with the whole tag
-                    event.replaceInput({}, itemId, "#" + tag)
-                    // Replace any time the item appears as an output, with the priority item
-                    if (itemId != oItem) event.replaceOutput({}, itemId, oItem)
-                }
+                // Replace any time the item appears as an input, with the whole tag
+                event.replaceInput({}, itemId, "#" + tag)
+                // Replace any time the item appears as an output, with the priority item
+                // (Unless this is the priority item itself, then do nothing)
+                if (itemId != priorityId) event.replaceOutput({}, itemId, priorityId)
+            }
 
-                // Attempt at removing duplicate recipes that arise with the same input and output
-                if (global["RECIPE_DEDUPE"]) {
-                    // Iterate over every recipe that has the output specified
-                    let rtypes = {}
-                    event.forEachRecipe({output: oItem}, (r) => {
-                        // Calculate the "hash" of this recipe based on it's ingredients
-                        let hash = []
-                        for (let stack of r.outputItems) {
-                            hash.push(stack.getId(), "+", stack.getCount(), ",")
+            // Attempt at removing duplicate recipes that arise with the same input and output
+            if (global["RECIPE_DEDUPE"]) {
+                // Iterate over every recipe that has the output specified
+                let rtypes = {}
+                event.forEachRecipe({output: priorityId}, (r) => {
+                    // Calculate the "hash" of this recipe based on it's ingredients
+                    let hash = []
+                    for (let stack of r.outputItems) {
+                        hash.push(stack.getId(), "+", stack.getCount(), ",")
+                    }
+                    hash.push(";")
+                    for (let ingredient of r.inputItems) {
+                        for (let item of ingredient.getItemIds()) {
+                            hash.push(item, "/")
                         }
-                        hash.push(";")
-                        for (let ingredient of r.inputItems) {
-                            for (let item of ingredient.getItemIds()) {
-                                hash.push(item, "/")
-                            }
-                            hash.push(",")
+                        hash.push(",")
+                    }
+
+                    // Determine if the recipe has been seen before using the type and hash
+                    let rtype = r.getType()
+                    if (rtype in rtypes) {
+                        // Not the first recipe of this type
+                        if (rtypes[rtype].has(hash)) {
+                            // Recipe match found. Delete this recipe
+                            // RecipeJS.removedRecipes.add() is not public, so we're doing this instead.
+                            event.remove({id: r.getId().toString()})
                         }
-    
-                        // Determine if the recipe has been seen before
-                        let rtype = r.getType()
-                        if (rtype in rtypes) {
-                            // Not the first recipe of this type
-                            if (rtypes[rtype].has(hash)) {
-                                // Recipe match found. Delete this recipe
-                                // RecipeJS.removedRecipes.add() is not public, so we're doing this instead.
-                                event.remove({id: r.getId().toString()})
-                            }
-                        } else {
-                            // First recipe of this type, add it's "hash"
-                            rtypes[rtype] = new Set([hash.join("")])
-                        }
-                    })
-                }
+                    } else {
+                        // First recipe of this type, add it's "hash"
+                        rtypes[rtype] = new Set([hash.join("")])
+                    }
+                })
             }
         }
     }
@@ -364,28 +381,27 @@ if (global["INVENTORY_UNIFY"]) {
             // Get held item
             let heldItem = event.getItem()
             let itemId = String(heldItem.getId())
-            console.log(itemId)
 
             // Check if item is excluded
             if (global["unifyexclude"].has(itemId)) return
 
-            // Check for every tag in the list
-            for (let tag of global["unifytags"]) {
-                if (testTag(tag, itemId)) {
-                    // If item is in tag, determine if it needs to be changed
-                    let tItem = global["tagitems"][tag]
-                    if (tItem != itemId) {
-                        // Fix slot number
-                        let slot = event.getSlot()
-                        if (slot <= 5) slot += 36
-                        else if (slot == 45) slot = 40
-                        else if (slot >= 36) slot -= 36
-                        // Update item
-                        event.getEntity().inventory.set(slot, Item.of(tItem, heldItem.getCount()))
-                    }
-                    break
-                }
-            }
+            // Check if this item is in a tag that needs to be unified
+            let itemTag = global["itemsToTags"][itemId]
+            if (!itemTag) return
+
+            // Check if the item is the priority item (if so, it does not need to be unified)
+            let priorityId = global["tagPriorityItems"][itemTag]
+            if (itemId == priorityId) return
+
+            // All checks have determined that this item must be unified.
+            // Fix slot number
+            let slot = event.getSlot()
+            if (slot <= 5) slot += 36
+            else if (slot == 45) slot = 40
+            else if (slot >= 36) slot -= 36
+
+            // Update item
+            event.getEntity().inventory.set(slot, Item.of(priorityId, heldItem.getCount()))
         }
     })
 }
@@ -393,26 +409,28 @@ if (global["INVENTORY_UNIFY"]) {
 // Items on ground
 if (global["ITEM_UNIFY"]) {
     onEvent("entity.spawned", event => {
+        // Check if an item has spawned
         let entity = event.getEntity()
-        if (entity.getType() == "minecraft:item") {
-            let gItem = entity.getItem()
-            if (gItem) {
-                let itemId = String(gItem.getId())
-                // Check if item is excluded
-                if (global["unifyexclude"].has(itemId)) return
+        if (entity.getType() != "minecraft:item") return
 
-                // Check for every tag in the list
-                for (let tag of global["unifytags"]) {
-                    if (testTag(tag, itemId)) {
-                        // If item is in tag, determine if it needs to be changed
-                        let tItem = global["tagitems"][tag]
-                        if (tItem != itemId) {
-                            entity.setItem(Item.of(tItem, gItem.getCount()))
-                        }
-                        break
-                    }
-                }
-            }
-        }
+        // Obtain item
+        let entityItem = entity.getItem()
+        if (!entityItem) return
+        let itemId = String(entityItem.getId())
+
+        // Check if item is excluded
+        if (global["unifyexclude"].has(itemId)) return
+
+        // Check if this item is in a tag that needs to be unified
+        let itemTag = global["itemsToTags"][itemId]
+        if (!itemTag) return
+
+        // Check if the item is the priority item (if so, it does not need to be unified)
+        let priorityId = global["tagPriorityItems"][itemTag]
+        if (itemId == priorityId) return
+
+        // All checks have determined that this item must be unified.
+        // Change the item entity's item.
+        entity.setItem(Item.of(priorityId, entityItem.getCount()))
     })
 }
