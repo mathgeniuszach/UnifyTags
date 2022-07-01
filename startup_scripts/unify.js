@@ -3,7 +3,7 @@
 // Rejoining a server with different tags (or with more/less mods) will not change the cache if it already exists.
 // You must delete the cache file to re-generate the cache if you add/remove mods.
 // The cache file can be found in the /kubejs/config/ folder.
-global["CACHE_TAGS"] = true
+global["CACHE_TAGS"] = false
 
 if (global["CACHE_TAGS"]) {
     // Attempt to load the cache if it exists
