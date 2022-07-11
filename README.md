@@ -18,7 +18,7 @@ In order to run UnifyTags, you need [KubeJS](https://www.curseforge.com/minecraf
 
 ## Using the Cache
 
-In order to make unified materials hide themselves properly in JEI/REI, you may need to utilize the caching feature. This will save a list of tags and some configured options to a JSON file and will make it so any time you join any other server or reload JEI/REI those values will be used. To generate the cache, join a singleplayer world (you can find the cache in the /kubejs/config/ folder as `unify_cache.json`). You must delete the json file to clear the cache; any time you make a change to the configuration, or add/remove a mod that uses those tags, make sure to delete and regenerate the cache. Note that every client should also have the same copy of the cache as the server, to make sure the right items are hidden from REI that would be unified by the server.
+In order to make unified materials hide themselves properly in JEI/REI, you may need to utilize the caching feature. This will save a list of tags and some configured options to a JSON file and will make it so any time you join any other server or reload JEI/REI those values will be used. To use the cache, set `global["CACHE_TAGS"] = true` in the startup file. To generate the cache, join a singleplayer world (you can find the cache in the /kubejs/config/ folder as `unify_cache.json`). You must delete the json file to clear the cache; any time you make a change to the configuration, or add/remove a mod that uses those tags, make sure to delete and regenerate the cache. Note that every client should also have the same copy of the cache as the server, to make sure the right items are hidden from REI that would be unified by the server.
 
 ## License
 
