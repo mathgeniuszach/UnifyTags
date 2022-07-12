@@ -12,7 +12,7 @@ if (global["CACHE_TAGS"]) {
         cache = JsonIO.read("kubejs/config/unify_cache.json")
     } catch (err) { }
 
-    if (cache && "unifytags" in cache) {
+    if (cache && "tagItems" in cache) {
         global["cache"] = cache
         
         global["itemsToTags"] = cache["itemsToTags"]
