@@ -18,6 +18,9 @@ if (global["CACHE_TAGS"]) {
         global["itemsToTags"] = cache["itemsToTags"]
         global["tagItems"] = cache["tagItems"]
         global["tagPriorityItems"] = cache["tagPriorityItems"]
-        global["unifyexclude"] = new Set(cache["unifyexclude"])
+        
+        exclusions = new Set()
+        for (let exc of cache["unifyexclude"]) exclusions.add(exc)
+        global["unifyexclude"] = exclusions
     }
 }
