@@ -57,6 +57,8 @@ let tagUnions = [
 ]
 
 // Split tags apart to create new ones. If a tag does not exist, it will not be merged into or used.
+// NOTE: THIS FEATURE IS FOR 1.18+ ONLY! IT DOES NOT DO ANYTHING ON 1.16 OR BELOW.
+// BLAME THE KUBEJS DEVS FOR MAKING THE gatherAllItemIDs() METHOD PRIVATE.
 let tagSplits = [
     // Makes it so that deepslate, netherrack, and stone ores are unified separately.
     [
@@ -203,46 +205,55 @@ onEvent('tags.items', event => {
             }
         }
 
-        // Create tags from intersections
-        for (let split of tagSplits) {
-            for (let sum of esplit(split[0])) {
-                let sumtag = tryTag(sum)
-                if (!sumtag) continue
-                
-                let sumset = new Set()
-                let sumevget = event.get(sum)
-                
-                let fname = "getObjectIds"
-                try {
-                    let c = sumevget[fname]
-                } catch (err) {
-                    fname = "getAllItemIds"
-                }
-                
-                for (let v of sumevget[fname]()) {
-                    sumset.add(String(v))
-                }
-
-                // Perform intersection
-                for (let intersectors of split.slice(1)) {
-                    for (let intersector of esplit(intersectors)) {
-                        let intertag = tryTag(intersector)
-                        if (!intertag) continue
-
-                        // Ok, actually do the test to perform the intersection
-                        let tag = event.get(root + i)
-                        for (let item of event.get(intersector)[fname]()) {
-                            if (sumset.has(String(item))) tag.add(String(item))
+        // Create tags from intersections (1.18+ only)
+        let ver = String(Platform.getMcVersion()).split(".")
+        
+        if (parseInt(ver[0]) > 1 || parseInt(ver[1]) >= 18) {
+            for (let split of tagSplits) {
+                for (let sum of esplit(split[0])) {
+                    let sumtag = tryTag(sum)
+                    if (!sumtag) continue
+                    
+                    let sumset = new Set()
+                    let sumevget = event.get(sum)
+                    
+                    
+                    let sumitems;
+                    try {
+                        sumitems = sumevget.getObjectIds()
+                    } catch (err) {
+                        try {
+                            sumitems = sumevget.getAllItemIds()
+                        } catch (err) {
+                            sumitems = sumevget.gatherAllItemIDs()
                         }
-
-                        // Add tag to list of tags to unify
-                        tags.add(root + i)
-                        ++i
                     }
-                }
+                    
+                    for (let v of sumitems) {
+                        sumset.add(String(v))
+                    }
 
-                // Remove original tag from tags to unify
-                tags.delete(sum)
+                    // Perform intersection
+                    for (let intersectors of split.slice(1)) {
+                        for (let intersector of esplit(intersectors)) {
+                            let intertag = tryTag(intersector)
+                            if (!intertag) continue
+
+                            // Ok, actually do the test to perform the intersection
+                            let tag = event.get(root + i)
+                            for (let item of event.get(intersector)[fname]()) {
+                                if (sumset.has(String(item))) tag.add(String(item))
+                            }
+
+                            // Add tag to list of tags to unify
+                            tags.add(root + i)
+                            ++i
+                        }
+                    }
+
+                    // Remove original tag from tags to unify
+                    tags.delete(sum)
+                }
             }
         }
     }
@@ -317,7 +328,9 @@ onEvent("recipes", event => {
     }
     
     if (global["RECIPE_UNIFY"]) {
-        for (let [tag, stacks] of Object.entries(global["tagItems"])) {
+        
+        for (let tag of Object.keys(global["tagItems"])) {
+            let stacks = global["tagItems"][tag]
             let priorityId = global["tagPriorityItems"][tag]
             for (let itemId of stacks) {
                 if (global["unifyexclude"].has(itemId)) continue
@@ -336,16 +349,16 @@ onEvent("recipes", event => {
                 event.forEachRecipe({output: priorityId}, (r) => {
                     // Calculate the "hash" of this recipe based on it's ingredients
                     let hash = []
-                    for (let stack of r.outputItems) {
+                    r.outputItems.forEach((stack) => {
                         hash.push(stack.getId(), "+", stack.getCount(), ",")
-                    }
+                    })
                     hash.push(";")
-                    for (let ingredient of r.inputItems) {
-                        for (let item of ingredient.getItemIds()) {
+                    r.inputItems.forEach((ingredient) => {
+                        ingredient.getItemIds().forEach((item) => {
                             hash.push(item, "/")
-                        }
+                        })
                         hash.push(",")
-                    }
+                    })
 
                     // Determine if the recipe has been seen before using the type and hash
                     let rtype = r.getType()
