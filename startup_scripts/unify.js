@@ -5,6 +5,8 @@
 // The cache file can be found in the /kubejs/config/ folder.
 global["CACHE_TAGS"] = false
 
+console.log("Using UnifyTags v1.13-dev")
+
 if (global["CACHE_TAGS"]) {
     // Attempt to load the cache if it exists
     let cache = null
