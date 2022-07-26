@@ -219,12 +219,15 @@ onEvent('tags.items', event => {
                     
                     
                     let sumitems;
+                    let fname = "getObjectIds"
                     try {
                         sumitems = sumevget.getObjectIds()
                     } catch (err) {
+                        fname = "getAllItemIds"
                         try {
                             sumitems = sumevget.getAllItemIds()
                         } catch (err) {
+                            fname = "gatherAllItemIDs"
                             sumitems = sumevget.gatherAllItemIDs()
                         }
                     }
