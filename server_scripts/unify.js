@@ -173,7 +173,7 @@ function tryTag(tag) {
     }
 }
 
-onEvent('tags.items', event => {
+const e_tags_items = event => {
     if (!("cache" in global)) {
         // Create custom tags
         let root = "unifytags:tag"
@@ -206,9 +206,7 @@ onEvent('tags.items', event => {
         }
 
         // Create tags from intersections (1.18+ only)
-        let ver = String(Platform.getMcVersion()).split(".")
-        
-        if (parseInt(ver[0]) > 1 || parseInt(ver[1]) >= 18) {
+        if (global["VERSION"][1] >= 18) {
             for (let split of tagSplits) {
                 for (let sum of esplit(split[0])) {
                     let sumtag = tryTag(sum)
@@ -260,10 +258,10 @@ onEvent('tags.items', event => {
             }
         }
     }
-})
+}
 
 // Replace input and output of recipes
-onEvent("recipes", event => {
+const e_recipes = event => {
     // If the cache is already generated, this doesn't need to run again
     if (!("cache" in global)) {
         // Necessary since Rhino doesn't support the spread operator
@@ -380,7 +378,15 @@ onEvent("recipes", event => {
             }
         }
     }
-})
+}
+
+if (global["V6P"]) {
+    ServerEvents.tags("item", e_recipes)
+    ServerEvents.recipes(e_recipes)
+} else {
+    onEvent("tags.items", e_tags_items)
+    onEvent("recipes", e_recipes)
+}
 
 let invnames = new Set([
     "net.minecraft.inventory.container.PlayerContainer",
@@ -391,7 +397,7 @@ let invnames = new Set([
 // Handle inventory change (to check for unificaiton)
 // Unfortunately it gets called twice due to setting the inventory.
 if (global["INVENTORY_UNIFY"]) {
-    onEvent("player.inventory.changed", event => {
+    const e_player_inventory_changed = event => {
         let ename = String(event.getEntity().getOpenInventory().getClass().getName())
         if (invnames.has(ename)) {
             // Get held item
@@ -419,12 +425,18 @@ if (global["INVENTORY_UNIFY"]) {
             // Update item
             event.getEntity().inventory.set(slot, Item.of(priorityId, heldItem.getCount()))
         }
-    })
+    }
+
+    if (global["V6P"]) {
+        PlayerEvents.inventoryChanged(e_player_inventory_changed)
+    } else {
+        onEvent("player.inventory.changed", e_player_inventory_changed)
+    }
 }
 
 // Items on ground
 if (global["ITEM_UNIFY"]) {
-    onEvent("entity.spawned", event => {
+    const e_entity_spawned = event => {
         // Check if an item has spawned
         let entity = event.getEntity()
         if (entity.getType() != "minecraft:item") return
@@ -448,5 +460,11 @@ if (global["ITEM_UNIFY"]) {
         // All checks have determined that this item must be unified.
         // Change the item entity's item.
         entity.setItem(Item.of(priorityId, entityItem.getCount()))
-    })
+    }
+
+    if (global["V6P"]) {
+        EntityEvents.spawned(e_entity_spawned)
+    } else {
+        onEvent("entity.spawned", e_entity_spawned)
+    }
 }

@@ -5,6 +5,10 @@
 // The cache file can be found in the /kubejs/config/ folder.
 global["CACHE_TAGS"] = false
 
+const VERSION = String(Platform.getMcVersion()).split(".")
+global["VERSION"] = VERSION
+global["V6P"] = VERSION[1] > 19 || VERSION[1] == 19 && VERSION[2] >= 2
+
 console.log("Using UnifyTags v1.15-dev")
 
 if (global["CACHE_TAGS"]) {

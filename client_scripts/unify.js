@@ -22,8 +22,15 @@ function hideItems(event) {
 }
 
 if (global["HIDE_UNIFIED_ITEMS"]) {
-    // JEI only works on forge.
-    if (Platform.isForge()) onEvent("jei.hide.items", hideItems)
-    // REI works on any platform.
-    onEvent("rei.hide.items", hideItems)
+    if (global["V6P"]) {
+        // JEI only works on forge. Probably.
+        if (Platform.isForge()) JEIEvents.hideItems(hideItems)
+        // REI works everywhere
+        REIEvents.hideItems(hideItems)
+    } else {
+        // JEI only works on forge.
+        if (Platform.isForge()) onEvent("jei.hide.items", hideItems)
+        // REI works on any platform.
+        onEvent("rei.hide.items", hideItems)
+    }
 }
