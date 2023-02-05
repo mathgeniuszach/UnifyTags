@@ -173,7 +173,7 @@ function tryTag(tag) {
     }
 }
 
-const e_tags_items = event => {
+let e_tags_items = event => {
     if (!("cache" in global)) {
         // Create custom tags
         let root = "unifytags:tag"
@@ -261,7 +261,7 @@ const e_tags_items = event => {
 }
 
 // Replace input and output of recipes
-const e_recipes = event => {
+let e_recipes = event => {
     // If the cache is already generated, this doesn't need to run again
     if (!("cache" in global)) {
         // Necessary since Rhino doesn't support the spread operator
@@ -397,7 +397,7 @@ let invnames = new Set([
 // Handle inventory change (to check for unificaiton)
 // Unfortunately it gets called twice due to setting the inventory.
 if (global["INVENTORY_UNIFY"]) {
-    const e_player_inventory_changed = event => {
+    let e_player_inventory_changed = event => {
         let ename = String(event.getEntity().getOpenInventory().getClass().getName())
         if (invnames.has(ename)) {
             // Get held item
@@ -436,7 +436,7 @@ if (global["INVENTORY_UNIFY"]) {
 
 // Items on ground
 if (global["ITEM_UNIFY"]) {
-    const e_entity_spawned = event => {
+    let e_entity_spawned = event => {
         // Check if an item has spawned
         let entity = event.getEntity()
         if (entity.getType() != "minecraft:item") return
