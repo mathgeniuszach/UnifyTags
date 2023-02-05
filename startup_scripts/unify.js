@@ -9,7 +9,7 @@ const VERSION = String(Platform.getMcVersion()).split(".")
 global["VERSION"] = VERSION
 global["V6P"] = VERSION[1] > 19 || VERSION[1] == 19 && VERSION[2] >= 2
 
-console.log("Using UnifyTags v1.15-dev")
+console.log("Using UnifyTags v1.16-dev")
 
 if (global["CACHE_TAGS"]) {
     // Attempt to load the cache if it exists
