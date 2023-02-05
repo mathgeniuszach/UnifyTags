@@ -14,7 +14,7 @@ UnifyTags is an item unifier similar to [InstantUnify](https://www.curseforge.co
 
 ## Installing
 
-In order to run UnifyTags, you need [KubeJS](https://www.curseforge.com/minecraft/mc-mods/kubejs) installed on either the forge or fabric version of Minecraft. After KubeJS is installed, drag and drop the three folders (`server_scripts`, `client_scripts`, and `startup_scripts`) into `.minecraft/kubejs` and UnifyTags will work on server startup or server reload. If you are running a server, you only need `server_scripts` installed server side and `client_scripts` installed client side; if you are using a cache, make sure `startup_scripts` is also installed both in the client and in the server.
+In order to run UnifyTags, you need [KubeJS](https://www.curseforge.com/minecraft/mc-mods/kubejs) installed on either the forge or fabric version of Minecraft. After KubeJS is installed, drag and drop the three folders (`server_scripts`, `client_scripts`, and `startup_scripts`) into `.minecraft/kubejs` and UnifyTags will work on server startup or server reload. If you are running a server, you only need `server_scripts` installed server side and `client_scripts` installed client side; nevertheless, make sure that `startup_scripts` is placed into both the client and the server.
 
 ## Using the Cache
 
