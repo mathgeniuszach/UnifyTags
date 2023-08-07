@@ -2,6 +2,8 @@
 
 ## Description
 
+If you find using this script finnicky, check out [Almost Unified](https://modrinth.com/mod/almost-unified) for a mod that functionally does the same thing.
+
 UnifyTags is an item unifier similar to [InstantUnify](https://www.curseforge.com/minecraft/mc-mods/instantunify) and [UniDict](https://www.curseforge.com/minecraft/mc-mods/unidict). It works through [KubeJS](https://www.curseforge.com/minecraft/mc-mods/kubejs) and unifies items in the world, items in your inventory, and some recipes based upon tags (oreDict) so you will only ever have to worry about one ingot of a given material instead of the many given by different mods. You can configure what tags get unified in the `server_scripts/unify.js` script. Changes are applied on server reload, unless you utilize the cache
 
 ## Features
