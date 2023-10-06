@@ -1,7 +1,5 @@
 # UnifyTags
 
-Contact me on [Discord](https://discord.gg/pBFqEcXvW5) and support me on [Ko-Fi](https://ko-fi.com/mathgeniuszach)!
-
 ## Description
 
 If you find using this script finnicky, check out [Almost Unified](https://modrinth.com/mod/almost-unified) for a mod that functionally does the same thing. You can also turn on and off features from this script if you want part of it's functionality but not all of it; this allows you to use both the script and the mod side-by-side.
@@ -27,3 +25,7 @@ In order to make unified materials hide themselves properly in JEI/REI, you may 
 ## License
 
 Use this in whatever modpack you want, with or without telling me. Modify and sell it too if you want. I don't mind so long as you're honest about the script's origin and what you did to it.
+
+## Contact
+
+Contact me on [Discord](https://discord.gg/pBFqEcXvW5) and support me on [Ko-Fi](https://ko-fi.com/mathgeniuszach)!
