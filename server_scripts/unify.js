@@ -381,7 +381,7 @@ let e_recipes = event => {
 }
 
 if (global["V6P"]) {
-    ServerEvents.tags("item", e_recipes)
+    ServerEvents.tags("item", e_tags_items)
     ServerEvents.recipes(e_recipes)
 } else {
     onEvent("tags.items", e_tags_items)
