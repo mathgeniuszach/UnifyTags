@@ -435,13 +435,6 @@ if (global["INVENTORY_UNIFY"]) {
     }
 }
 
-    if (global["V6P"]) {
-        PlayerEvents.inventoryChanged(e_player_inventory_changed)
-    } else {
-        onEvent("player.inventory.changed", e_player_inventory_changed)
-    }
-}
-
 // Items on ground
 if (global["ITEM_UNIFY"]) {
     let e_entity_spawned = event => {
