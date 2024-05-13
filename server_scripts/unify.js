@@ -403,6 +403,7 @@ if (global["INVENTORY_UNIFY"]) {
             // Get held item
             let heldItem = event.getItem()
             let itemId = String(heldItem.getId())
+            let stackSize = heldItem.getCount()
 
             // Check if item is excluded
             if (global["unifyexclude"].has(itemId)) return
@@ -410,7 +411,7 @@ if (global["INVENTORY_UNIFY"]) {
             // Check if this item is in a tag that needs to be unified
             let itemTag = global["itemsToTags"][itemId]
             if (!itemTag) return
-
+            console.info(itemTag)
             // Check if the item is the priority item (if so, it does not need to be unified)
             let priorityId = global["tagPriorityItems"][itemTag]
             if (itemId == priorityId) return
@@ -423,9 +424,16 @@ if (global["INVENTORY_UNIFY"]) {
             else if (slot >= 36) slot -= 36
 
             // Update item
-            event.getEntity().inventory.set(slot, Item.of(priorityId, heldItem.getCount()))
+            event.player.inventory.setStackInSlot(slot, `${stackSize}x ${priorityId}`)
         }
     }
+
+    if (global["V6P"]) {
+        PlayerEvents.inventoryChanged(e_player_inventory_changed)
+    } else {
+        onEvent("player.inventory.changed", e_player_inventory_changed)
+    }
+}
 
     if (global["V6P"]) {
         PlayerEvents.inventoryChanged(e_player_inventory_changed)
